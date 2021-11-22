@@ -1,9 +1,15 @@
 package com.example.week1
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.week1.ui.theme.Week1Theme
 
@@ -32,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MyApp() {
-    var shouldShowOnboarding by remember { mutableStateOf(true) }
+    var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
 
     if (shouldShowOnboarding) {
         OnboardingScreen(onContinueClicked = { shouldShowOnboarding = false })
@@ -42,9 +50,9 @@ fun MyApp() {
 }
 
 @Composable
-fun Greetings(names: List<String> = listOf("World", "Compose")) {
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-        for (name in names) {
+fun Greetings(names: List<String> = List(1000) { "$it" }) {
+    LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
+        items(items = names) { name ->
             Greeting(name = name)
         }
     }
@@ -52,8 +60,14 @@ fun Greetings(names: List<String> = listOf("World", "Compose")) {
 
 @Composable
 fun Greeting(name: String) {
-    var expended = remember { mutableStateOf(false) }
-    var extraPadding = if (expended.value) 48.dp else 0.dp
+    var expended by remember { mutableStateOf(false) }
+    val extraPadding by animateDpAsState (
+        if (expended) 48.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
 
     Surface(
         color = MaterialTheme.colors.primary,
@@ -63,15 +77,17 @@ fun Greeting(name: String) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(bottom = extraPadding)
+                    .padding(bottom = extraPadding.coerceAtLeast(0.dp))
             ) {
                 Text(text = "Hello,")
-                Text(text = "$name!")
+                Text(text = "$name!", style = MaterialTheme.typography.h4.copy(
+                    fontWeight = FontWeight.ExtraBold
+                ))
             }
             OutlinedButton(
-                onClick = { expended.value = !expended.value }
+                onClick = { expended = !expended }
             ) {
-                Text(if (expended.value) "Show less" else "Show more")
+                Text(if (expended) "Show less" else "Show more")
             }
         }
     }
@@ -98,7 +114,11 @@ fun OnboardingScreen(onContinueClicked: () -> Unit) {
 }
 
 
-@Preview(showBackground = true, widthDp = 320, heightDp = 320)
+@Preview(
+    showBackground = true,
+    widthDp = 320,
+    heightDp = 320
+)
 @Composable
 fun OnboardingScreenPreview() {
     Week1Theme {
@@ -106,10 +126,19 @@ fun OnboardingScreenPreview() {
     }
 }
 
-@Preview(showBackground = true, widthDp = 320)
+@Preview(
+    showBackground = true,
+    widthDp = 320,
+    uiMode = UI_MODE_NIGHT_YES,
+    name = "DefaultPreviewDark"
+)
+@Preview(
+    showBackground = true,
+    widthDp = 320
+)
 @Composable
 fun DefaultPreview() {
     Week1Theme {
-        MyApp()
+        Greetings()
     }
 }
